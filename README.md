@@ -47,7 +47,7 @@ The recommended automation stack is Playwright with Node.js/TypeScript. The appl
 
 For discovery, use an LLM API that supports vision, tool calling, and strict structured JSON responses. Gemini is the configured provider for this project. Validate actions and artifacts with Zod before execution or persistence, and redact credentials and sensitive values from traces.
 
-The app currently provides the proxy target and Gemini discovery client. Discovery, artifact generation, deterministic replay, HITL handoff, and evidence capture are the next automation-layer deliverables.
+The app provides the proxy target, Gemini discovery client, and a working discovery runner. Deterministic replay, HITL handoff, and broader evidence capture are the remaining automation-layer deliverables.
 
 ## Gemini discovery setup
 
@@ -71,7 +71,15 @@ Set it up step by step:
 
 The command loads `.env`, sends a minimal discovery request, and prints the validated action. It never prints the API key. Without a configured key, it exits with a setup message and makes no network request. The browser app itself remains usable without Gemini.
 
-The intended next integration step is to pass Playwright accessibility snapshots and screenshots into `proposeNextAction`, validate the returned action against the project safety allowlist, and only then execute it. Saved artifacts should contain redacted inputs and replay should make no Gemini calls.
+The discovery runner passes Playwright accessibility snapshots into `proposeNextAction`, validates the returned action against the project safety allowlist, executes it, and saves a redacted artifact. Replay should make no Gemini calls.
+
+Run the first discovery flow after starting the app:
+
+```bash
+npm run discover
+```
+
+The default goal is to find member `M-10482` and open the member details page. Set `HEADLESS=false` to watch Chromium, or override `DISCOVERY_GOAL`, `MAX_STEPS`, and `ARTIFACT_PATH` for another run.
 
 ## Playwright
 

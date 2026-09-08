@@ -10,7 +10,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "gemini:verify": "node scripts/verify-gemini.js"
+    "gemini:verify": "node scripts/verify-gemini.js",
+    "discover": "node scripts/discover.js"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
