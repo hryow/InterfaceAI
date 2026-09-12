@@ -81,6 +81,14 @@ npm run discover
 
 The default goal is to find member `M-10482` and open the member details page. Set `HEADLESS=false` to watch Chromium, or override `DISCOVERY_GOAL`, `MAX_STEPS`, and `ARTIFACT_PATH` for another run.
 
+Discovery artifacts follow [schema/artifact.json](schema/artifact.json). Validate the generated artifact with:
+
+```bash
+npm run artifact:validate
+```
+
+The schema records metadata, replay inputs, allowed actions, redaction policy, step checkpoints, and typed results. Replay is explicitly marked as not allowing an LLM call.
+
 ## Playwright
 
 Playwright Test is configured in [playwright.config.js](playwright.config.js). It targets Chromium, uses `http://localhost:3000` as its base URL, and starts Vite automatically when no local server is already running.

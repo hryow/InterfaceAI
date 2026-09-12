@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-ai.local/schema/artifact.json",
+  "title": "Computer-Use Capability Artifact",
+  "description": "A redacted, replayable browser capability discovered against a proxy application.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactId", "metadata", "goal", "inputs", "safety", "steps", "result"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "artifactId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdAt", "application", "baseUrl", "automation", "model"],
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "application": { "type": "string", "minLength": 1 },
+        "baseUrl": { "type": "string", "format": "uri" },
+        "automation": { "type": "string", "const": "playwright" },
+        "model": { "type": "string", "minLength": 1 }
+      }
+    },
+    "goal": { "type": "string", "minLength": 1 },
+    "inputs": {
+      "type": "object",
+      "description": "Non-secret values that can be substituted during deterministic replay.",
+      "additionalProperties": { "type": "string" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowedActions", "redaction", "maxSteps", "llmAllowedDuringReplay"],
+      "properties": {
+        "allowedActions": {
+          "type": "array",
+          "items": { "enum": ["click", "fill", "select", "wait", "finish", "escalate"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "redaction": { "type": "string", "const": "credentials_and_sensitive_values" },
+        "maxSteps": { "type": "integer", "minimum": 1 },
+        "llmAllowedDuringReplay": { "type": "boolean", "const": false }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "result": { "$ref": "#/$defs/result" }
+  },
+  "$defs": {
+    "action": {
+      "type": "string",
+      "enum": ["click", "fill", "select", "wait", "finish", "escalate", "error"]
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "title", "accessibility"],
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "title": { "type": "string" },
+        "accessibility": { "type": "string" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "action", "target", "value", "reason", "checkpoint"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 1 },
+        "action": { "$ref": "#/$defs/action" },
+        "target": { "type": ["string", "null"] },
+        "value": { "type": ["string", "null"] },
+        "reason": { "type": "string" },
+        "checkpoint": { "$ref": "#/$defs/checkpoint" }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "finalCheckpoint"],
+      "properties": {
+        "status": { "enum": ["completed", "business_outcome", "recoverable", "hard_failure", "escalated"] },
+        "businessCode": { "type": ["string", "null"] },
+        "error": { "type": ["string", "null"] },
+        "finalCheckpoint": {
+          "anyOf": [
+            { "$ref": "#/$defs/checkpoint" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

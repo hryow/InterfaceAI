@@ -7,6 +7,7 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const GOAL = process.env.DISCOVERY_GOAL || 'Find member M-10482 and open the member details page.';
 const MAX_STEPS = Number(process.env.MAX_STEPS || 10);
 const ARTIFACT_PATH = process.env.ARTIFACT_PATH || 'evidence/discovery-member-details.json';
+const ARTIFACT_ID = ARTIFACT_PATH.split('/').pop().replace(/\.json$/, '');
 const ALLOWED_ACTIONS = new Set(['click', 'fill', 'select', 'wait', 'finish', 'escalate']);
 
 function validateAction(action) {
@@ -155,7 +156,14 @@ async function main() {
   } catch (error) {
     const errorCheckpoint = await capturePageState(page).catch(() => null);
     finalCheckpoint = errorCheckpoint ? redactPageState(errorCheckpoint) : null;
-    steps.push({ index: steps.length + 1, action: 'error', target: null, value: null, reason: redactText(error.message) });
+    steps.push({
+      index: steps.length + 1,
+      action: 'error',
+      target: null,
+      value: null,
+      reason: redactText(error.message),
+      checkpoint: finalCheckpoint || { url: BASE_URL, title: 'Unavailable', accessibility: '' },
+    });
     console.error(`Discovery failed: ${error.message}`);
   } finally {
     await context.close();
@@ -163,7 +171,33 @@ async function main() {
   }
 
   await mkdir('evidence', { recursive: true });
-  await writeFile(ARTIFACT_PATH, `${JSON.stringify({ goal: GOAL, status, maxSteps: MAX_STEPS, steps, finalCheckpoint }, null, 2)}\n`);
+  const artifact = {
+    schemaVersion: '1.0',
+    artifactId: ARTIFACT_ID,
+    metadata: {
+      createdAt: new Date().toISOString(),
+      application: 'Northstar Member Services',
+      baseUrl: BASE_URL,
+      automation: 'playwright',
+      model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+    },
+    goal: GOAL,
+    inputs: { memberId: 'M-10482' },
+    safety: {
+      allowedActions: [...ALLOWED_ACTIONS],
+      redaction: 'credentials_and_sensitive_values',
+      maxSteps: MAX_STEPS,
+      llmAllowedDuringReplay: false,
+    },
+    steps,
+    result: {
+      status,
+      businessCode: null,
+      error: status === 'hard_failure' ? steps.at(-1)?.reason || 'Discovery failed.' : null,
+      finalCheckpoint,
+    },
+  };
+  await writeFile(ARTIFACT_PATH, `${JSON.stringify(artifact, null, 2)}\n`);
   console.log(`Artifact: ${ARTIFACT_PATH}`);
   if (status !== 'completed') process.exitCode = 1;
 }
